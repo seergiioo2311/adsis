@@ -13,10 +13,10 @@ crearUsuario() {
 		echo "Campo invalido"
 		exit 1
 	else
-		useradd -U -m -k /etc/skel -K UID_MIN=1815 -K PASS_MAX_DAYS=30 -c "$1" "$3" &> /dev/null
-		if [ $? -ne 0 ]; then
-			echo ("El usuario $1 ya existe")
+		if [ id "$1" >/dev/null 2>&1]; then
+			echo "El usuario $1 ya existe"
 		else
+			useradd -U -m -k /etc/skel -K UID_MIN=1815 -K PASS_MAX_DAYS=30 -c "$1" "$3" &> /dev/null
 			echo "$1:$2" | chpasswd
 			echo "$3 ha sido creado"
 			usermod -aG 'sudo' $1
