@@ -3,15 +3,17 @@
 
 crearUsuario() {
 	#Comprobamos que los parametros de la funcion no son ninguno la cadena vacia
-	if [ -z "$1" || -z "$2" || -z "$3" ]; then
+	if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
 		echo "Campo invalido" 1>&2
 		exit 1
 	else
-		if [ id "$1" && "$1" != "root" ]; then
-			echo "El usuario $3 ya existe" 1>&2
+		#Comprobamos si el usuario existe ya o no
+		if [ $(cat /etc/passwd | grep "$1:" | wc -l) -ne 0 ]; then
+			echo "El usuario $1 ya existe" 1>&2
 		else	
-			useradd -U -m -k /etc/skel -K UID_MIN=1815 -c "$3" "$1" 2>/dev/null
-			usermod -f 30 "$1"
+			#Creamos el usuario
+			useradd -U -m -k /etc/skel -K UID_MIN=1815 -c "$3" "$1" &>/dev/null
+			usermod -f 30 "$1" &>/dev/null
 			echo "$1:$2" | chpasswd
 			echo "$3 ha sido creado"
 		fi
@@ -19,10 +21,16 @@ crearUsuario() {
 }
 
 borrarUsuario() {
+	#Comprobamos que el parametro de la funcion no sea la cadena vacia
 	if [ ! -z "$1" ]; then
-		homeUser="$(getent passwd $1 | cut -d: -f6)"
-		tar czvf "/extra/backup/$1.tar" "$homeUser"
-		userdel -r "$1" 2>/dev/null
+		#Cogemos el directorio home del usuario		
+		homeUser=$(getent passwd "$1" | cut -d ':' -f6)
+		#Creamos la copia de seguridad
+		tar -cvf "/extra/backup/$1.tar" "$homeUser" &>/dev/null
+		#Si la copia de seguridad se ha realizado bien, borramos el usuario
+		if [ $? -eq 0 ]; then
+			userdel -r "$1" &>/dev/null
+		fi
 	else
 		echo "Campo invalido" 1>&2
 		exit 1
@@ -45,11 +53,11 @@ if [ "$EUID" -eq 0 ]; then
 		elif [ "$1" == "-s" ]; then
 			#Comprobamos que existe el directorio /extra/backup
 			if [ ! -d "/extra" ]; then
-			       mkdir /extra/
+			       mkdir -p /extra/backup
 		       	fi
 	 
 			if [ ! -d "/extra/backup" ]; then
-				mkdir /extra/backup/
+				mkdir /extra/backup
 			fi
 			
 			#Le pasamos a la funcion borrarUsuario el nombre de usuario
