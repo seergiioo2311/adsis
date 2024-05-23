@@ -11,7 +11,7 @@ checkUser() {
 	dir_IP=$2
 	file=$3
 	while read -r passwd; do
-		sshpass -e ssh $user@$dir_IP "exit" &> /dev/null
+		SSHPASS=$passwd sshpass -e ssh $user@$dir_IP "exit" &> /dev/null
 		if [[ $? -eq 0 ]]; then 
 			return 1
 		fi
@@ -52,6 +52,6 @@ while IFS= read -r linea; do
 			echo "El usuario: $user posee una contraseña debil" >> $fichero
 		fi
 	fi
-done < $filepasswd
+done <<< "$filepasswd"
 
 sendMail $fichero
